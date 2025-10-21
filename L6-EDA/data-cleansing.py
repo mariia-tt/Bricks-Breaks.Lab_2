@@ -233,13 +233,13 @@ from pyspark.sql.functions import element_at, split
 bathrooms_df = min_nights_df
 
 
-# bathrooms_df = (
-#   bathrooms_df
-#   .withColumn('bathrooms', element_at(split('bathrooms_text', ' '), 1).cast('double'))
-#   .drop('bathrooms_text')
-# )
+bathrooms_df = (
+  bathrooms_df
+  .withColumn('bathrooms', element_at(split('bathrooms_text', ' '), 1).cast('double'))
+  .drop('bathrooms_text')
+)
 
-# display(bathrooms_df)
+display(bathrooms_df)
 
 
 

@@ -157,7 +157,7 @@ _ = (agg_listing_df
 
 # COMMAND ----------
 
-# MAGIC %md 
+# MAGIC %md
 # MAGIC
 # MAGIC ## Load geo json data 
 # MAGIC
@@ -177,3 +177,66 @@ _ = (agg_listing_df
 # MAGIC   # load neighbourhoods_geo as spark data frame 
 # MAGIC   neighbourhoods_geo_df = spark.read.format('json').load(neighbourhoods_geo_path)
 # MAGIC ```
+
+# COMMAND ----------
+
+# MAGIC %pip install pandas-geojson 
+
+# COMMAND ----------
+
+from pandas_geojson import read_geojson_url
+from pyspark.sql.types import StructType, StructField, StringType
+import json
+
+neighbourhoods_geo_url = "http://data.insideairbnb.com/greece/attica/athens/2023-09-21/visualisations/neighbourhoods.geojson"
+
+schema = StructType([
+    StructField("neighbourhood", StringType(), True),
+    StructField("neighbourhood_group", StringType(), True),
+    StructField("geometry_type", StringType(), True),
+    StructField("feature_type", StringType(), True)
+])
+
+try:
+    geo_json = read_geojson_url(neighbourhoods_geo_url)
+    geo_json_dict = geo_json.to_dict()
+    features = geo_json_dict["features"]
+    
+    simple_data = []
+    for feature in features:
+        properties = feature.get("properties", {})
+        geometry = feature.get("geometry", {})
+        
+        simple_data.append({
+            "neighbourhood": properties.get("neighbourhood"),
+            "neighbourhood_group": properties.get("neighbourhood_group"),
+            "geometry_type": geometry.get("type"),
+            "feature_type": feature.get("type")
+        })
+    
+    display_df = spark.createDataFrame(simple_data, schema=schema)
+    display(display_df)
+    
+except Exception as e:
+    print(f"Помилка: {e}")
+    print("Використовуємо альтернативний метод з requests...")
+    
+    import requests
+    response = requests.get(neighbourhoods_geo_url)
+    geo_data = response.json()
+    
+    features = geo_data["features"]
+    simple_data = []
+    for feature in features:
+        properties = feature.get("properties", {})
+        geometry = feature.get("geometry", {})
+        
+        simple_data.append({
+            "neighbourhood": properties.get("neighbourhood"),
+            "neighbourhood_group": properties.get("neighbourhood_group"),
+            "geometry_type": geometry.get("type"),
+            "feature_type": feature.get("type")
+        })
+    
+    display_df = spark.createDataFrame(simple_data, schema=schema)
+    display(display_df)
